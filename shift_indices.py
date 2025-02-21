@@ -11,8 +11,8 @@ def input_data():
 
 def main():
     args = input_data()
-    print(args)
-    parse_protein_top(args.topA, "system1")
+    atomtypes, protein = parse_protein_top(args.topA, "system1")
+    print(protein.keys())
     return
 
 if __name__== "__main__":
