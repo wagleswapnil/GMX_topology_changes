@@ -10,6 +10,16 @@ def update_idx(i, idx, increment):
 def shift_index(protein, idx, increment):
     idx = int(idx)
     increment = int(increment)
+    if "atoms" in protein:
+        for i, atom in enumerate(protein["atoms"]):
+            if atom[0] == ";":
+                continue
+            elif atom[0] == "#":
+                continue
+            else:
+                nr, rest = atom.split(None, 1)
+                protein["atoms"][i] = update_idx(nr, idx, increment).rjust(6) + "    " + rest
+
     if "bonds" in protein:
         for i, bond in enumerate(protein["bonds"]):
             if bond[0] == ";":
@@ -56,7 +66,7 @@ def main():
     args = input_data()
     atomtypes, protein = parse_protein_top(args.topA, "system1")
     protein = shift_index(protein, args.idx, args.increment)
-    print("".join(protein['dihedrals']))
+    print("".join(protein['atoms']))
     return
 
 if __name__== "__main__":
