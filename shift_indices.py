@@ -1,6 +1,7 @@
 import sys, os, re
 import argparse
 from protein_top_parser import parse_protein_top
+from write_topology import write_protein_topology
 
 def update_idx(i, idx, increment):
     if int(i) >= idx:
@@ -66,7 +67,7 @@ def main():
     args = input_data()
     atomtypes, protein = parse_protein_top(args.topA, "system1")
     protein = shift_index(protein, args.idx, args.increment)
-    print("".join(protein['atoms']))
+    write_protein_topology(atomtypes, protein)
     return
 
 if __name__== "__main__":
