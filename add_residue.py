@@ -1,6 +1,7 @@
 import sys, os, re
 import argparse
 from protein_top_parser import parse_protein_top
+from write_topology import write_protein_topology
 
 def fetch_top_backbone_atoms(protein, idxA):
     nminus1N = None
@@ -101,22 +102,152 @@ def fetch_top_backbone_atoms(protein, idxA):
     print(nplus1N, nplus1C, nplus1H)
     return
 
+def add_residue_connections(proteinA, idxA, proteinB):
+    beginA = None
+    endA = None
+    bb_atoms = ["N", "C", "O", "CA", "H", "HA", "CB"]
+    aname_to_idx = {}
+    if "-" in idxA:
+        beginA = int(idxA.split("-")[0])
+        endA = int(idxA.split("-")[1])
+    else:
+        beginA = int(idxA.strip())
+        endA = int(idxA.strip())
+
+    for i, atom in enumerate(proteinA["atoms"]):
+        if atom[0] == ";" or atom[0] == "#":
+            continue
+        else:
+            nr, atype, resnr, residue, aname, cgnr, q, m, rest = atom.split(None, 8)
+            if int(nr) < beginA:
+                if aname in bb_atoms:
+                    key = "nminus1" + aname
+                    aname_to_idx[key] = nr
+            elif beginA <= int(nr) <= endA:
+                key = "n_" + residue + "_" + aname
+                aname_to_idx[key] = nr
+            else:
+                break
+    for i, atom in enumerate(reversed(proteinA["atoms"])):
+        if atom[0] == ";" or atom[0] == "#":
+            continue
+        else:
+            nr, atype, resnr, residue, aname, cgnr, q, m, rest = atom.split(None, 8)
+            if int(nr) > endA:
+                if aname in bb_atoms:
+                    key = "nplus1" + aname
+                    aname_to_idx[key] = nr
+            else:
+                break
+    
+    proteinA["bonds"].append("; bonds for the dummy residue")
+    for bond in proteinB["bonds"]:
+        ai, aj, rest = bond.split(None, 2)
+        proteinA["bonds"].append(aname_to_idx[ai] + "    " + aname_to_idx[aj] + "    " + rest)
+
+    return aname_to_idx, proteinA
+
+def get_residue_connections(proteinB, idxB):
+    beginB = None
+    endB = None
+    bb_atoms = ["N", "C", "O", "CA", "H", "HA", "CB"]
+    real_bb_atoms = ["N", "C", "O", "CA", "H", "HA"]
+    real_bb_params = {}
+    idx_to_aname = {}
+    if "-" in idxB:
+        beginB = int(idxB.split("-")[0])
+        endB = int(idxB.split("-")[1])
+    else:
+        beginB = int(idxB.strip())
+        endB = int(idxB.strip())
+    
+    for i, atom in enumerate(proteinB["atoms"]):
+        if atom[0] == ";":
+            continue
+        elif atom[0] == "#":
+            continue
+        else:
+            nr, atype, resnr, residue, aname, cgnr, q, m, rest = atom.split(None, 8)
+            if int(nr) < beginB:
+                if aname in bb_atoms:
+                    key = "nminus1" + aname
+                    idx_to_aname[nr] =  key
+            elif int(nr) >= beginB and int(nr) <= endB:
+                key = "n_" + residue + "_" + aname
+                idx_to_aname[nr] =  key
+            else:
+                break
+    for i, atom in enumerate(reversed(proteinB["atoms"])):
+        if atom[0] == ";":
+            continue
+        elif atom[0] == "#":
+            continue
+        else:
+            nr, atype, resnr, residue, aname, cgnr, q, m, rest = atom.split(None, 8)
+            if int(nr) > endB:
+                if aname in bb_atoms:
+                    key = "nplus1" + aname
+                    idx_to_aname[nr] =  key
+            else:
+                break
+    r = range(beginB, endB+1)
+
+    bonds = []
+    for bond in proteinB["bonds"]:
+        if bond[0] == ";" or bond[0] == "#":
+            continue
+        ai, aj, rest = bond.split(None, 2)
+        if int(ai) in r or int(aj) in r:
+            bonds.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + rest)
+    proteinB["bonds"] = bonds
+
+    pairs = []
+    for pair in proteinB["pairs"]:
+        if pair[0] == ";" or pair[0] == "#":
+            continue
+        ai, aj, rest = pair.split(None, 2)
+        if int(ai) in r or int(aj) in r:
+            pairs.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + rest)
+    proteinB["pairs"] = pairs
+
+    angles = []
+    for angle in proteinB["angles"]:
+        if angle[0] == ";" or angle[0] == "#":
+            continue
+        ai, aj, ak, rest = angle.split(None, 3)
+        if int(ai) in r or int(aj) in r or int(ak) in r:
+           angles.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + idx_to_aname[ak] + "    " + rest) 
+    proteinB["angles"] = angles
+
+    dihedrals = []
+    for dihedral in proteinB["dihedrals"]:
+        if dihedral[0] == ";" or dihedral[0] == "#":
+            continue
+        ai, aj, ak, al, rest = dihedral.split(None, 4)
+        if int(ai) in r or int(aj) in r or int(ak) in r or int(al) in r:
+            dihedrals.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + idx_to_aname[ak] + "    " + idx_to_aname[al] + "    " + rest)
+    proteinB["dihedrals"] = dihedrals
+    return idx_to_aname, proteinB
 
 def input_data():
     parser = argparse.ArgumentParser(description="generate a dual topology file, where one residue of the protein is mutated into another")
     parser.add_argument("--topA", type=str, help="path for topology file A, i.e., the WT topology", required=True)
-    parser.add_argument("--topB", type=str, help="path for topology file A, i.e., the mutant topology", required=False)
-    parser.add_argument("--idxA", type=str, help="index of atom right before the mutating residue", required=False)
-    parser.add_argument("--idxB", type=str, help="range of indices to pick from mutant to add to the WT", required=False)
+    parser.add_argument("--topB", type=str, help="path for topology file A, i.e., the mutant topology", required=True)
+    parser.add_argument("--idxA", type=str, help="index of atom right before the mutating residue", required=True)
+    parser.add_argument("--idxB", type=str, help="range of indices to pick from mutant to add to the WT", required=True)
     parser.add_argument("--backbone", type=str, help="should the backbone be added as well, yes/no?", required=False)
     args = parser.parse_args()
     return args
 
 def main():
     args = input_data()
-    atomtypes, protein = parse_protein_top(args.topA, "system1")
-    fetch_top_backbone_atoms(protein, args.idxA)
-    fetch_connections(args.topB, )
+    atomtypesB, proteinB = parse_protein_top(args.topB, "system1")
+    atomtypesA, proteinA = parse_protein_top(args.topA, "system1")
+    idx_to_aname, proteinB = get_residue_connections(proteinB, args.idxB)
+    aname_to_idx, proteinA = add_residue_connections(proteinA, args.idxA, proteinB)
+    for key, value in aname_to_idx.items():
+        print(key + "\t" + value)
+    print(proteinA["bonds"])
     return
 
 if __name__== "__main__":

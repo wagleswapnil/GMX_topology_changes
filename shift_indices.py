@@ -18,8 +18,10 @@ def shift_index(protein, idx, increment):
             elif atom[0] == "#":
                 continue
             else:
-                nr, rest = atom.split(None, 1)
-                protein["atoms"][i] = update_idx(nr, idx, increment).rjust(6) + "    " + rest
+                #nr, rest = atom.split(None, 1)
+                #protein["atoms"][i] = update_idx(nr, idx, increment).rjust(6) + "    " + rest
+                nr, atype, resnr, residue, aname, cgnr, q, m, rest = atom.split(None, 8)
+                protein["atoms"][i] = update_idx(nr, idx, increment).rjust(6) + "  " + atype.rjust(6) + "  " + resnr.rjust(6) + "  " + residue.rjust(6) + "  " + aname.rjust(6) + "  " + update_idx(cgnr, idx, increment).rjust(6) + "  " + q.rjust(12) + "  " + m.rjust(10) + " " + rest
 
     if "bonds" in protein:
         for i, bond in enumerate(protein["bonds"]):
@@ -57,7 +59,7 @@ def shift_index(protein, idx, increment):
 def input_data():
     parser = argparse.ArgumentParser(description="generate a dual topology file, where one residue of the protein is mutated into another")
     parser.add_argument("--topA", type=str, help="path for topology A, i.e., the topology of the wild type protein", required=True)
-    parser.add_argument("--topB", type=str, help="path for topology B, i.e., the topology of the mutant protein", required=True)
+    parser.add_argument("--topB", type=str, help="path for topology B, i.e., the topology of the mutant protein", required=False)
     parser.add_argument("--idx", type=str, help="index, after which the addition/deletion is to be made", required=True)
     parser.add_argument("--increment", type=str, help="the amplitude of the addition/deletion", required=True)
     args = parser.parse_args()
