@@ -172,9 +172,13 @@ def get_residue_connections(proteinB, idxB):
                 if aname in bb_atoms:
                     key = "nminus1" + aname
                     idx_to_aname[nr] =  key
-            elif int(nr) >= beginB and int(nr) <= endB:
-                key = "n_" + residue + "_" + aname
-                idx_to_aname[nr] =  key
+            elif  beginB <= int(nr) <= endB:
+                if aname in real_bb_atoms:
+                    key = "n" + "_" + aname
+                    idx_to_aname[nr] =  key
+                else:
+                    key = "n_" + residue + "_" + aname
+                    idx_to_aname[nr] =  key
             else:
                 break
     for i, atom in enumerate(reversed(proteinB["atoms"])):
@@ -193,41 +197,69 @@ def get_residue_connections(proteinB, idxB):
     r = range(beginB, endB+1)
 
     bonds = []
+    real_bb_params["bonds"] = {}
     for bond in proteinB["bonds"]:
         if bond[0] == ";" or bond[0] == "#":
             continue
         ai, aj, rest = bond.split(None, 2)
         if int(ai) in r or int(aj) in r:
-            bonds.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + rest)
+            if idx_to_aname[ai] in real_bb_atoms and idx_to_aname[aj] in real_bb_atoms:
+                key1 = idx_to_aname[ai] + "_" + idx_to_aname[aj]
+                key2 = idx_to_aname[aj] + "_" + idx_to_aname[ai]
+                real_bb_params["bonds"][key1] = rest
+                real_bb_params["bonds"][key2] = rest
+            else:
+                bonds.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + rest)
     proteinB["bonds"] = bonds
 
     pairs = []
+    real_bb_params["pairs"] = {}
     for pair in proteinB["pairs"]:
         if pair[0] == ";" or pair[0] == "#":
             continue
         ai, aj, rest = pair.split(None, 2)
         if int(ai) in r or int(aj) in r:
-            pairs.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + rest)
+            if idx_to_aname[ai] in real_bb_atoms and idx_to_aname[aj] in real_bb_atoms:
+                key1 = idx_to_aname[ai] + "_" + idx_to_aname[aj]
+                key2 = idx_to_aname[aj] + "_" + idx_to_aname[ai]
+                real_bb_params["pairs"][key1] = rest
+                real_bb_params["pairs"][key2] = rest
+            else:
+                pairs.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + rest)
     proteinB["pairs"] = pairs
 
     angles = []
+    real_bb_params["angles"] = {}
     for angle in proteinB["angles"]:
         if angle[0] == ";" or angle[0] == "#":
             continue
         ai, aj, ak, rest = angle.split(None, 3)
         if int(ai) in r or int(aj) in r or int(ak) in r:
-           angles.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + idx_to_aname[ak] + "    " + rest) 
+            if idx_to_aname[ai] in real_bb_atoms and idx_to_aname[aj] in real_bb_atoms and idx_to_aname[ak] in real_bb_atoms:
+                key1 = idx_to_aname[ai] + "_" + idx_to_aname[aj] + "_" + idx_to_aname[ak]
+                key2 = idx_to_aname[ak] + "_" + idx_to_aname[aj] + "_" + idx_to_aname[ai]
+                real_bb_params["angles"][key1] = rest
+                real_bb_params["angles"][key2] = rest
+            else:
+               angles.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + idx_to_aname[ak] + "    " + rest) 
     proteinB["angles"] = angles
 
     dihedrals = []
+    real_bb_params["dihedrals"] = {}
     for dihedral in proteinB["dihedrals"]:
         if dihedral[0] == ";" or dihedral[0] == "#":
             continue
         ai, aj, ak, al, rest = dihedral.split(None, 4)
         if int(ai) in r or int(aj) in r or int(ak) in r or int(al) in r:
-            dihedrals.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + idx_to_aname[ak] + "    " + idx_to_aname[al] + "    " + rest)
+            if idx_to_aname[ai] in real_bb_atoms and idx_to_aname[aj] in real_bb_atoms and idx_to_aname[ak] in real_bb_atoms and idx_to_aname[al] in real_bb_atoms:
+                key1 = idx_to_aname[ai] + "_" + idx_to_aname[aj] + "_" + idx_to_aname[ak] + "_" + idx_to_aname[al]
+                key2 = idx_to_aname[al] + "_" + idx_to_aname[ak] + "_" + idx_to_aname[aj] + "_" + idx_to_aname[ai]
+                real_bb_params["dihedrals"][key1] = rest
+                real_bb_params["dihedrals"][key2] = rest
+            else:
+                dihedrals.append(idx_to_aname[ai] + "    " + idx_to_aname[aj] + "    " + idx_to_aname[ak] + "    " + idx_to_aname[al] + "    " + rest)
     proteinB["dihedrals"] = dihedrals
-    return idx_to_aname, proteinB
+    return real_bb_params, idx_to_aname, proteinB
 
 def input_data():
     parser = argparse.ArgumentParser(description="generate a dual topology file, where one residue of the protein is mutated into another")
@@ -243,8 +275,12 @@ def main():
     args = input_data()
     atomtypesB, proteinB = parse_protein_top(args.topB, "system1")
     atomtypesA, proteinA = parse_protein_top(args.topA, "system1")
-    idx_to_aname, proteinB = get_residue_connections(proteinB, args.idxB)
-    aname_to_idx, proteinA = add_residue_connections(proteinA, args.idxA, proteinB)
+    real_bb_params, idx_to_aname, proteinB = get_residue_connections(proteinB, args.idxB)
+    print(real_bb_params)
+    for key, value in idx_to_aname.items():
+        print(key + "\t" + value)
+    quit()
+    aname_to_idx, proteinA = add_residue_connections(proteinA, args.idxA, proteinB, real_bb_params)
     for key, value in aname_to_idx.items():
         print(key + "\t" + value)
     print(proteinA["bonds"])
