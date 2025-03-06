@@ -54,8 +54,21 @@ def make_resB_connections(proteinA, stateB_connections, topA_indices, resA_indic
             continue
         else:
             ai, aj, rest = pair.split(None, 2)
-
-
+            if ai in resA_indices and aj in resA_indices:
+                for pairB in stateB_connections["pairs"]:
+                    aiB, ajB, restB = pairB.split(None, 2)
+                    if topA_indices[aiB] == ai and topA_indices[ajB] == aj:
+                        proteinA["pairs"][i] = ai + "    " + aj + "    " + rest.split(';')[0].strip() + "  " + restB
+                        stateB_connections["pairs"].remove(pairB)
+                    elif topA_indices[aiB] == aj and topA_indices[ajB] == ai:
+                        proteinA["pairs"][i] = ai + "    " + aj + "    " + rest.split(';')[0].strip() + "  " + restB
+                        stateB_connections["pairs"].remove(pairB)
+    
+    if len(stateB_connections["pairs"]) != 0:
+        for i, pairB in enumerate(stateB_connections["pairs"]):
+            aiB, ajB, restB = pairB.split(None, 2)
+            if aiB in topA_indices and ajB in topA_indices:
+                proteinA["pairs"].append(topA_indices[aiB] + "    " + topA_indices[ajB] + "    " + restB)
 
 
     for i, angle in enumerate(proteinA["angles"]):
@@ -77,6 +90,25 @@ def make_resB_connections(proteinA, stateB_connections, topA_indices, resA_indic
         for i, angleB in enumerate(stateB_connections["angles"]):
             aiB, ajB, akB, restB = angleB.split(None, 3)
             proteinA["angles"].append(topA_indices[aiB] + "    " + topA_indices[ajB] + "    " + topA_indices[akB] + "    " + restB)
-    print("".join(proteinA["angles"]))
 
-    return
+
+    for i, dihedral in enumerate(proteinA["dihedrals"]):
+        if dihedral[0] == ";" or dihedral[0] == "#":
+            continue
+        else:
+            ai, aj, ak, al, rest = dihedral.split(None, 4)
+            if ai in resA_indices and aj in resA_indices and ak in resA_indices and al in resA_indices:
+                for dihedralB in stateB_connections["dihedrals"]:
+                    aiB, ajB, akB, alB, restB = dihedralB.split(None, 4)
+                    if topA_indices[aiB] == ai and topA_indices[ajB] == aj and topA_indices[akB] == ak and topA_indices[alB] == al:
+                        proteinA["dihedrals"][i] = ai + "    " + aj + "    " + ak + "    " + al + rest.split(';')[0].strip() + "  " + restB
+                        stateB_connections["dihedrals"].remove(dihedralB)
+                    elif topA_indices[aiB] == al and topA_indices[ajB] == ak and topA_indices[akB] == aj and topA_indices[alB] == ai:
+                        proteinA["dihedrals"][i] = ai + "    " + aj + "    " + ak + "    " + al + rest.split(';')[0].strip() + "  " + restB
+                        stateB_connections["dihedrals"].remove(dihedralB)
+
+    if len(stateB_connections["dihedrals"]) != 0:
+        for i, dihedralB in enumerate(stateB_connections["dihedrals"]):
+            aiB, ajB, akB, alB, restB = dihedralB.split(None, 4)
+            proteinA["dihedrals"].append(topA_indices[aiB] + "    " + topA_indices[ajB] + "    " + topA_indices[akB] + "    " + topA_indices[alB] + "    " + restB)
+    return proteinA
