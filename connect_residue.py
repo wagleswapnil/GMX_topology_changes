@@ -2,28 +2,19 @@ import sys, os, re
 import argparse
 from protein_top_parser import parse_protein_top
 from write_topology import write_protein_topology
+from get_b_connections import get_resB_connections, get_topB_indices
+from insert_b_connections import get_topA_indices, make_resB_connections
 
+def get_topB_connections(proteinB, resB):
+    topB_bb_indices, resB_indices, resnameB = get_topB_indices(proteinB, resB)
+    proteinB = get_resB_connections(proteinB, topB_bb_indices, resB_indices)
+    return proteinB, resnameB
 
-def get_topB_indices(proteinB, resB):
-    residues = {str(int(resB) - 1): "nminus1", resB: "n", str(int(resB) + 1): "nplus1"}
-    bb_atoms = ["N", "CA", "C", "O", "H", "HA"]
-    topB_bb_indices = {}
-    for atom in proteinB["atoms"]:
-        if atom[0] == ";" or atom[0] == "#":
-            continue
-        else:
-            nr, atype, resnr, residue, aname, cgnr, q, m, rest = atom.split(None, 8)
-            if resnr in residues and aname in bb_atoms:
-                topB_bb_indices[nr] = residues[resnr] + aname
-            elif resnr == resB:
-                topB_bb_indices[nr] = residues[resnr] + aname
-    return topB_bb_indices
-
-
-def get_topB_connections(proteinA, proteinB, resA, resB):
-    topB_bb_indices = get_topB_bb_indices(proteinB, resB)
-    for key, value in topB_bb_indices.items():
+def insert_stateB_connections(proteinA, resA, stateB_connections, resnameB):
+    topA_indices, resA_indices = get_topA_indices(proteinA, resA, resnameB)
+    for key, value in topA_indices.items():
         print(key + "\t" + value)
+    proteinA = make_resB_connections(proteinA, stateB_connections, topA_indices, resA_indices)
     return
 
 
@@ -43,17 +34,10 @@ def main():
     atomtypesA, proteinA = parse_protein_top(args.topA, "system1")
     if args.resB == None:
         args.resB = args.resA
-    stateB_connections = get_topB_connections(proteinA, proteinB, args.resA, args.resB)
-    quit()
-    real_bb_params, idx_to_aname, proteinB = get_residue_connections(proteinB, args.resB)
-    print(real_bb_params)
-    for key, value in idx_to_aname.items():
-        print(key + "\t" + value)
-    quit()
-    aname_to_idx, proteinA = add_residue_connections(proteinA, args.idxA, proteinB, real_bb_params)
-    for key, value in aname_to_idx.items():
-        print(key + "\t" + value)
-    print(proteinA["bonds"])
+    stateB_connections, resnameB = get_topB_connections(proteinB, args.resB)
+    print(resnameB)
+    #print("".join(stateB_connections["dihedrals"]))
+    insert_stateB_connections(proteinA, args.resA, stateB_connections, resnameB)
     return
 
 if __name__== "__main__":
