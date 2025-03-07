@@ -1,8 +1,19 @@
+#!/usr/bin/python
+"""
+Description: This script inserts sidechain atoms from a residue from topology B into a residue of topology A. It generates a B state (dummy) for the sidechain of residue of topology A, and an A state (dummy) for the sidechain of residue of topology B. For every atom added, the script updates the atomtypes list by adding the dummmy atomtype of the added atom. 
+
+- The residue number of the sidechains of both topologies A (where the new atoms are inserted) and B (where the new residue atoms are taken from)) have to be the same for subsequent use (connecting these inserted atoms with precursor and subsequent amino acids) of the output topology. 
+
+Written on: March 06th, 2025
+Written by: Swapnil Wagle, swapnil.wagle92[at]gmail[.]com
+"""
+
 import sys, os, re
 import argparse
 from protein_top_parser import parse_protein_top
 from write_topology import write_protein_topology
 
+#Fuction to convert the list of atomtypes into a dictionary.
 def get_atomtypes_dict(atomtypes):
     atomtypes_dict = {}
     for i, atomtype in enumerate(atomtypes):
@@ -12,6 +23,9 @@ def get_atomtypes_dict(atomtypes):
             atomtypes_dict[atomtype.split()[0]] = atomtype.split(None,1)[1].strip()
     return atomtypes_dict
 
+
+#Function to generate the B (dummy) state for the sidechain of residue from topology A. 
+#The fuction also updates the atomtypes list with the newly added dummy atomtype.
 def generate_Bstate(atomtypes, protein, A, backbone):
     atomtypes_dict = get_atomtypes_dict(atomtypes)
     bb_atoms = ["N", "C", "O", "CA", "H", "HA"]
@@ -42,6 +56,10 @@ def generate_Bstate(atomtypes, protein, A, backbone):
                     atomtypes.append("DUM" + atype + "    " + "0.000000     0.000000   A     0.000000     0.000000\n")
     return atomtypes, protein
 
+
+#Function to insert sidechain atoms for a residue from topology B. 
+#The added atoms are interacting in state B, while state A for these each of these atoms is dummy. 
+#A dummy atomtype for each of the added atom is also added to the atomtypes list. 
 def generate_Astate(atomtypes, protein, B, backbone):
     atomtypes_dict = get_atomtypes_dict(atomtypes)
     bb_atoms = ["N", "C", "O", "CA", "H", "HA"]
@@ -73,10 +91,7 @@ def generate_Astate(atomtypes, protein, B, backbone):
     return atomtypes, protein
 
 
-def check_atomtypes(atomtypesA, atomtypesB):
-    return
-
-
+#This function takes atoms from topology file B and inserts into the topology file A.
 def merge_atoms(atomtypes, proteinA, idxA, proteinB, idxB, backbone):
     atomtypes_dict = get_atomtypes_dict(atomtypes)
     bb_atoms = ["N", "C", "O", "CA", "H", "HA"]
@@ -141,7 +156,7 @@ def merge_atoms(atomtypes, proteinA, idxA, proteinB, idxB, backbone):
     proteinA["atoms"] = proteinA["atoms"][:insertion_point+1] + B_state_atoms + proteinA["atoms"][insertion_point+1:]
     return atomtypes, proteinA
 
-
+#Function called by "check_atomtypes" to compare sigma and epsilon values
 def compare_atomtype_values(value1, value2):
     sigma1, epsilon1 = value1.split()[-2:]
     sigma2, epsilon2 = value2.split()[-2:]
@@ -150,6 +165,9 @@ def compare_atomtype_values(value1, value2):
     else:
         return False
 
+
+#Function to check if the atomtpes from topology files A and B are the same.
+# For example, sigma and epsilon for an atomtype "C1" should be the same in the two files.
 def check_atomtypes(atomtypesA, atomtypesB):
     atomtypes = []
     atomtypesA_dict = get_atomtypes_dict(atomtypesA)
