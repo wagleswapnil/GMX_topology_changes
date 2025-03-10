@@ -34,12 +34,15 @@ def get_resB_connections(proteinB, topB_bb_indices, resB_indices):
     proteinB["bonds"] = bonds
 
     pairs = []
+    print(topB_bb_indices)
     for i, pair in enumerate(proteinB["pairs"]):
         if pair[0] == ";" or pair[0] == "#":
             continue
         else:
             ai, aj, rest = pair.split(None, 2)
             if ai in resB_indices or aj in resB_indices:
+
+                print(pair)
                 pairs.append(topB_bb_indices[ai] + "    " + topB_bb_indices[aj] + "    " + rest)
     proteinB["pairs"] = pairs
 

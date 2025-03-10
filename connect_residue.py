@@ -15,7 +15,7 @@ def insert_stateB_connections(proteinA, resA, stateB_connections, resnameB):
     for key, value in topA_indices.items():
         print(key + "\t" + value)
     proteinA = make_resB_connections(proteinA, stateB_connections, topA_indices, resA_indices)
-    return
+    return proteinA
 
 
 def input_data():
@@ -24,6 +24,7 @@ def input_data():
     parser.add_argument("--topB", type=str, help="path for topology file A, i.e., the mutant topology", required=True)
     parser.add_argument("--resA", type=str, help="index of mutating residue", required=True)
     parser.add_argument("--resB", type=str, help="index of residue to pick from mutant to add to the WT", required=False)
+    parser.add_argument("--out-path", type=str, help="filename for output", required=False)
     parser.add_argument("--backbone", type=str, help="should the backbone be added as well, yes/no?", required=False)
     args = parser.parse_args()
     return args
@@ -37,7 +38,8 @@ def main():
     stateB_connections, resnameB = get_topB_connections(proteinB, args.resB)
     print(resnameB)
     #print("".join(stateB_connections["dihedrals"]))
-    insert_stateB_connections(proteinA, args.resA, stateB_connections, resnameB)
+    proteinA = insert_stateB_connections(proteinA, args.resA, stateB_connections, resnameB)
+    write_protein_topology(atomtypesA, proteinA, args.out_path)
     return
 
 if __name__== "__main__":

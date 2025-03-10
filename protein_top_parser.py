@@ -24,6 +24,7 @@ def get_next_chunk(lines):
 
 
 #currently does not work if there are "bonds" or "angles" or "dihedrals" sections in the intermolecular interactions at the end of the file
+#TODO: Only works if the topology file contains the topology of only the mutating moleculetype. Otherwise, it just keeps on reading the file and ultimately throws an error
 def parse_protein_top(path, molname):
     #topology={ "head" : {}, "molecules": {}, "tail": {}}
     topology = {}
@@ -34,6 +35,8 @@ def parse_protein_top(path, molname):
     moleculetype_section = ["atoms", "bonds", "pairs", "angles", "dihedrals", "cmap", "virtual_sites2", "constraints", "exclusions", "other", "settles"]
     tail_sections = ["system", "molecules", "other"]
     main_section = None
+    topology['head'] = {}
+    topology['head']['atomtypes'] = []
     while len(lines) != 1:
         section, chunk, lines = get_next_chunk(lines)
         if section in head_sections:

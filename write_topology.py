@@ -13,14 +13,16 @@ from protein_top_parser import parse_protein_top
 #Function to write the topology fle
 def write_protein_topology(atomtypes, protein, out_top):
     moleculetype_sections = ["moleculetype", "atoms", "bonds", "pairs", "angles", "dihedrals", "cmap", "virtual_sites2", "constraints", "exclusions", "other", "settles"]
-    with open(out_top, 'w') as f:
-        out_top.write("[ atomtypes ]" + "\n")
-        out_top.write("".join(atomtypes))
+    f = open(out_top, 'w')
+    f.write("[ atomtypes ]" + "\n")
+    f.write("".join(atomtypes))
+    f.write("\n")
     for key in moleculetype_sections:
         if key in protein:
-            out_top.write(f"[ {key} ]\n")
-            out_top.write("".join(protein[key]))
-        f.close()
+            f.write(f"[ {key} ]\n")
+            f.write("".join(protein[key]))
+            f.write("\n")
+    f.close()
     return
 
 #Input argument parser

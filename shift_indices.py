@@ -32,7 +32,11 @@ def shift_index(protein, idx, increment):
             elif atom[0] == "#":
                 continue
             else:
-                nr, atype, resnr, residue, aname, cgnr, q, m, rest = atom.split(None, 8)
+                if len(atom.split()) == 8:
+                    nr, atype, resnr, residue, aname, cgnr, q, m = atom.split()
+                    rest = "\n"
+                else:
+                    nr, atype, resnr, residue, aname, cgnr, q, m, rest = atom.split(None, 8)
                 protein["atoms"][i] = update_idx(nr, idx, increment).rjust(6) + "  " + atype.rjust(6) + "  " + resnr.rjust(6) + "  " + residue.rjust(6) + "  " + aname.rjust(6) + "  " + update_idx(cgnr, idx, increment).rjust(6) + "  " + q.rjust(12) + "  " + m.rjust(10) + " " + rest
 
     if "bonds" in protein:
@@ -73,14 +77,16 @@ def input_data():
     parser.add_argument("--topA", type=str, help="path for topology A, i.e., the topology of the wild type protein", required=True)
     parser.add_argument("--idx", type=str, help="index, after which the addition/deletion is to be made", required=True)
     parser.add_argument("--increment", type=str, help="the amplitude of the addition/deletion", required=True)
+    parser.add_argument("--out-path", type=str, help="filename for output", required=False)
+    parser.add_argument("--mol-name", type=str, help="name of moleculetype to read", required=False, default="system1")
     args = parser.parse_args()
     return args
 
 def main():
     args = input_data()
-    atomtypes, protein = parse_protein_top(args.topA, "system1")
+    atomtypes, protein = parse_protein_top(args.topA, args.mol_name)
     protein = shift_index(protein, args.idx, args.increment)
-    write_protein_topology(atomtypes, protein)
+    write_protein_topology(atomtypes, protein, args.out_path)
     return
 
 if __name__== "__main__":

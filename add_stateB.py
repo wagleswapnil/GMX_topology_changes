@@ -178,20 +178,20 @@ def check_atomtypes(atomtypesA, atomtypesB):
             if compare_atomtype_values(value, atomtypesB_dict[key]):
                 continue
             else:
-                print("Error" + key + " is different between the two files")
+                print("Error: " + key + " is different between the two files")
                 quit()
         else:
-            print("Error" + "key" + " is absent from file2")
+            print("Error: " + key + " is absent from file2")
 
     for key, value in atomtypesB_dict.items():
         if key in atomtypesA_dict:
             if compare_atomtype_values(value, atomtypesA_dict[key]):
                 continue
             else:
-                print("Error" + key + " is different between the two files")
+                print("Error: " + key + " is different between the two files")
                 quit()
         else:
-            print("Error" + "key" + " is absent from file1")
+            print("Error: " + key + " is absent from file1")
     return
 
 def input_data():
@@ -201,6 +201,7 @@ def input_data():
     parser.add_argument("--A", type=str, help="range of indices, for which A state is interacting and B state is dummy", required=True)
     parser.add_argument("--B", type=str, help="range of indices, for which B state is interacting and A state is dummy", required=True)
     parser.add_argument("--backbone", type=str, help="should A and B states  be generated for the backbone, yes/no?", required=False, default="no")
+    parser.add_argument("--out-path", type=str, help="filename for output", required=False)
     args = parser.parse_args()
     return args
 
@@ -210,7 +211,7 @@ def main():
     atomtypesB, proteinB = parse_protein_top(args.topB, "system1")
     check_atomtypes(atomtypesA, atomtypesB)
     atomtypes, protein = merge_atoms(atomtypesA, proteinA, args.A, proteinB, args.B, args.backbone)
-    write_protein_topology(atomtypes, protein)
+    write_protein_topology(atomtypes, protein, args.out_path)
     return
 
 if __name__== "__main__":
